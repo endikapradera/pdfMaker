@@ -1,91 +1,142 @@
-# Document Merge Web App
+# PDF Maker - Fusionador de Documentos a PDF
 
-This project is a web application that allows users to upload different document types and merge them into a single PDF. The app includes a simple, responsive single-page interface.
+Aplicacion web de una sola pagina para unir multiples archivos en un unico PDF.
 
-## Features
+Permite subir archivos de distintos formatos, convertirlos a PDF cuando hace falta, ordenar el contenido antes de unir y descargar el documento final al instante.
 
-- Upload multiple documents in one action.
-- Convert and merge into one final PDF.
-- Download starts automatically when merge is done.
-- Drag and drop support for quick upload.
-- Reorder files in the list before merging.
-- Responsive single-page interface.
+Hecho por ENDIKA PRADERA.
 
-## Project Structure
+## Demo local
 
+1. Instala dependencias:
+
+```bash
+npm install
 ```
+
+2. Ejecuta en desarrollo:
+
+```bash
+npm run dev
+```
+
+3. Abre en navegador:
+
+```text
+http://localhost:3000
+```
+
+## Funcionalidades
+
+- Single page UI basica y bonita.
+- Subida multiple de archivos.
+- Soporte drag and drop (arrastrar y soltar).
+- Reordenar archivos antes de fusionar.
+- Conversion automatica segun tipo de archivo.
+- Descarga automatica del PDF final.
+- Limpieza de archivos temporales en servidor.
+
+## Formatos soportados
+
+- PDF: .pdf
+- Imagenes: .jpg, .jpeg, .png, .webp, .gif
+- Texto plano: .txt
+- Word: .doc, .docx
+
+Notas de conversion:
+
+- .docx y .doc se convierten extrayendo texto y renderizandolo en PDF.
+- .webp y .gif se convierten primero a PNG para incrustarlos en PDF.
+
+## Flujo de uso
+
+1. Selecciona archivos o arrastralos a la zona de carga.
+2. Reordena los elementos de la lista si quieres cambiar el orden final.
+3. Pulsa Unir y Descargar PDF.
+4. El navegador descarga documento-unido.pdf.
+
+## Estructura del proyecto
+
+```text
 document-merge-web-app
-├── src
-│   ├── server
-│   │   ├── app.ts                  # Entry point of the server application
-│   │   ├── controllers
-│   │   │   └── mergeController.ts   # Handles file uploads and merging documents
-│   │   ├── routes
-│   │   │   └── mergeRoutes.ts       # Sets up routes for document merging
-│   │   ├── services
-│   │   │   ├── convertService.ts    # Converts various file types for merging
-│   │   │   └── mergeService.ts      # Merges multiple PDFs into a single PDF
-│   │   └── types
-│   │       └── index.ts             # Defines request and response object structures
-│   └── client
-│       ├── index.html               # Main HTML file for the client-side application
-│       ├── app.ts                   # Client-side JavaScript for handling user interactions
-│       └── styles.css               # CSS styles for the client-side application
-├── package.json                     # npm configuration file
-├── tsconfig.json                    # TypeScript configuration file
-└── README.md                        # Project documentation
+|-- package.json
+|-- tsconfig.json
+|-- src
+|   |-- client
+|   |   |-- index.html
+|   |   |-- styles.css
+|   |   |-- app.js
+|   |   `-- app.ts
+|   `-- server
+|       |-- app.ts
+|       |-- controllers
+|       |   `-- mergeController.ts
+|       |-- routes
+|       |   `-- mergeRoutes.ts
+|       `-- services
+|           |-- convertService.ts
+|           `-- mergeService.ts
+`-- uploads
 ```
 
-## Installation
+## Scripts disponibles
 
-1. Clone the repository:
-   ```
-   git clone <repository-url>
-   cd document-merge-web-app
-   ```
+```bash
+npm run dev      # servidor con recarga
+npm run build    # compila TypeScript
+npm start        # arranca servidor
+```
 
-2. Install dependencies:
-   ```
-   npm install
-   ```
+## API
 
-3. Start the server:
-   ```
-   npm start
-   ```
+### POST /api/merge
 
-4. Open your browser and navigate to `http://localhost:3000`.
+Endpoint para fusionar archivos en un PDF unico.
 
-## Usage
+Request:
 
-- Select one or more files in the web form.
-- Click "Unir y Descargar PDF".
-- The app uploads files, converts them to PDF when needed, merges all pages, and downloads `documento-unido.pdf`.
+- Content-Type: multipart/form-data
+- Campo: files (multiple)
 
-## Supported Input Formats
+Response exitosa:
 
-- PDF (`.pdf`)
-- Images (`.jpg`, `.jpeg`, `.png`)
-- Images (`.webp`, `.gif`) converted to PDF through PNG fallback
-- Plain text (`.txt`)
-- Word (`.doc`, `.docx`)
+- Content-Type: application/pdf
+- Descarga directa con nombre documento-unido.pdf
 
-Notes:
-- `.docx` and `.doc` are converted by extracting text content and rendering that text into PDF pages.
-- For images, conversion currently supports JPG/JPEG/PNG.
+Errores comunes:
 
-## Technologies Used
+- 400 si no envias archivos.
+- 500 si algun archivo no se puede convertir.
+
+## Despliegue rapido (Render/Railway)
+
+Configuracion recomendada:
+
+- Build Command: npm install ; npm run build
+- Start Command: npm start
+- Node version: 18 o superior
+
+Variables de entorno opcionales:
+
+- PORT (la plataforma la inyecta normalmente)
+
+## Troubleshooting
+
+- Si falla un archivo Word antiguo (.doc), prueba guardarlo como .docx.
+- Si una imagen no abre, conviertela a JPG/PNG y vuelve a subirla.
+- Si no descarga, revisa bloqueadores del navegador para descargas automaticas.
+
+## Stack tecnico
 
 - Node.js
 - Express
 - TypeScript
-- HTML/CSS
-- JavaScript
+- Multer
+- pdf-lib
+- Mammoth
+- word-extractor
+- sharp
 
-## Contributing
+## Licencia
 
-Contributions are welcome! Please open an issue or submit a pull request for any improvements or bug fixes.
-
-## License
-
-This project is licensed under the MIT License. See the LICENSE file for details.
+MIT
