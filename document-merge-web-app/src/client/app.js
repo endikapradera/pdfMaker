@@ -100,7 +100,7 @@ uploadForm.addEventListener('submit', async (event) => {
     message.className = 'message loading';
 
     try {
-        const response = await fetch('/api/merge', {
+        const response = await fetch('/.netlify/functions/merge', {
             method: 'POST',
             body: formData,
         });

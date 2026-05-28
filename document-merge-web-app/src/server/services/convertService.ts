@@ -1,4 +1,5 @@
 import fs from 'fs/promises';
+import os from 'os';
 import path from 'path';
 import mammoth from 'mammoth';
 import { PDFDocument, StandardFonts } from 'pdf-lib';
@@ -6,20 +7,26 @@ import sharp from 'sharp';
 
 const WordExtractor = require('word-extractor');
 
+export interface UploadedDocument {
+    originalname: string;
+    mimetype: string;
+    data: Buffer;
+}
+
 export class ConvertService {
-    public async convertToPDF(file: Express.Multer.File): Promise<Uint8Array> {
+    public async convertToPDF(file: UploadedDocument): Promise<Uint8Array> {
         const extension = path.extname(file.originalname).toLowerCase();
 
         if (file.mimetype === 'application/pdf' || extension === '.pdf') {
-            return new Uint8Array(await fs.readFile(file.path));
+            return new Uint8Array(file.data);
         }
 
         if (file.mimetype.startsWith('image/')) {
-            return this.convertImageToPDF(file.path, extension);
+            return this.convertImageToPDF(file.data, extension);
         }
 
         if (file.mimetype === 'text/plain' || extension === '.txt') {
-            const textContent = await fs.readFile(file.path, 'utf-8');
+            const textContent = file.data.toString('utf-8');
             return this.convertTextToPDF(textContent);
         }
 
@@ -27,21 +34,31 @@ export class ConvertService {
             file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
             extension === '.docx'
         ) {
-            const { value } = await mammoth.extractRawText({ path: file.path });
+            const { value } = await mammoth.extractRawText({ buffer: file.data });
             return this.convertTextToPDF(value || '(Documento vacio)');
         }
 
         if (file.mimetype === 'application/msword' || extension === '.doc') {
-            const extractor = new WordExtractor();
-            const extractedDoc = await extractor.extract(file.path);
-            return this.convertTextToPDF(extractedDoc.getBody() || '(Documento vacio)');
+            return this.convertLegacyWordToPDF(file);
         }
 
         throw new Error(`Tipo de archivo no soportado: ${file.originalname}`);
     }
 
-    private async convertImageToPDF(imagePath: string, extension: string): Promise<Uint8Array> {
-        const originalImageBytes = await fs.readFile(imagePath);
+    private async convertLegacyWordToPDF(file: UploadedDocument): Promise<Uint8Array> {
+        const tmpFilePath = path.join(os.tmpdir(), `${Date.now()}-${file.originalname}`);
+
+        try {
+            await fs.writeFile(tmpFilePath, file.data);
+            const extractor = new WordExtractor();
+            const extractedDoc = await extractor.extract(tmpFilePath);
+            return this.convertTextToPDF(extractedDoc.getBody() || '(Documento vacio)');
+        } finally {
+            await fs.unlink(tmpFilePath).catch(() => undefined);
+        }
+    }
+
+    private async convertImageToPDF(originalImageBytes: Buffer, extension: string): Promise<Uint8Array> {
         const pdfDoc = await PDFDocument.create();
 
         const isJpg = extension === '.jpg' || extension === '.jpeg';

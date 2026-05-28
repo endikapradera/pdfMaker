@@ -108,17 +108,25 @@ Errores comunes:
 - 400 si no envias archivos.
 - 500 si algun archivo no se puede convertir.
 
-## Despliegue rapido (Render/Railway)
+## Despliegue en Netlify
 
-Configuracion recomendada:
+Este proyecto ya esta preparado para Netlify Functions.
 
-- Build Command: npm install ; npm run build
-- Start Command: npm start
+Configuracion recomendada en Netlify:
+
+- Base directory: document-merge-web-app
+- Build command: npm run build
+- Publish directory: src/client
+- Functions directory: netlify/functions
 - Node version: 18 o superior
 
-Variables de entorno opcionales:
+La ruta del merge queda resuelta por Netlify hacia:
 
-- PORT (la plataforma la inyecta normalmente)
+- /.netlify/functions/merge
+
+Tambien existe una redireccion de compatibilidad desde:
+
+- /api/merge
 
 ## Troubleshooting
 

@@ -4,13 +4,16 @@
   "description": "A web application that allows users to upload documents and merge them into a single PDF.",
   "main": "src/server/app.ts",
   "scripts": {
+    "netlify:build": "npm install ; npm run build",
     "start": "ts-node src/server/app.ts",
     "build": "tsc",
     "dev": "ts-node-dev src/server/app.ts"
   },
   "dependencies": {
+    "@netlify/functions": "^3.1.8",
     "docx": "^7.1.0",
     "express": "^4.17.1",
+    "lambda-multipart-parser": "^1.0.1",
     "mammoth": "^1.8.0",
     "multer": "^1.4.5-lts.1",
     "pdf-lib": "^1.17.1",

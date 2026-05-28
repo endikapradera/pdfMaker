@@ -22,7 +22,11 @@ export class MergeController {
             }
 
             const pdfBuffers = await Promise.all(
-                files.map((file) => this.convertService.convertToPDF(file))
+                files.map(async (file) => this.convertService.convertToPDF({
+                    originalname: file.originalname,
+                    mimetype: file.mimetype,
+                    data: await fs.readFile(file.path),
+                }))
             );
 
             const mergedPdf = await this.mergeService.mergePDFs(pdfBuffers);
