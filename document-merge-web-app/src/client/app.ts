@@ -3,6 +3,7 @@ const fileInput = document.getElementById('fileInput') as HTMLInputElement;
 const fileList = document.getElementById('fileList') as HTMLUListElement;
 const dropZone = document.getElementById('dropZone') as HTMLDivElement;
 const message = document.getElementById('message') as HTMLParagraphElement;
+const mergeButton = document.getElementById('mergeButton') as HTMLButtonElement;
 
 let selectedFiles: File[] = [];
 let dragIndex: number | null = null;
@@ -59,6 +60,33 @@ const appendFiles = (incomingFiles: FileList | File[]): void => {
     renderFileList();
 };
 
+const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+            const result = typeof reader.result === 'string' ? reader.result : '';
+            const base64 = result.split(',')[1] || '';
+            resolve(base64);
+        };
+        reader.onerror = () => reject(new Error(`No se pudo leer ${file.name}`));
+        reader.readAsDataURL(file);
+    });
+};
+
+const postWithTimeout = async (url: string, init: RequestInit, timeoutMs: number): Promise<Response> => {
+    const controller = new AbortController();
+    const timeoutRef = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+        return await fetch(url, {
+            ...init,
+            signal: controller.signal,
+        });
+    } finally {
+        clearTimeout(timeoutRef);
+    }
+};
+
 fileInput.addEventListener('change', () => {
     if (fileInput.files) {
         appendFiles(fileInput.files);
@@ -93,17 +121,28 @@ uploadForm.addEventListener('submit', async (event: SubmitEvent) => {
         return;
     }
 
-    const formData = new FormData();
-    selectedFiles.forEach((file) => formData.append('files', file));
-
     message.textContent = 'Uniendo archivos...';
     message.className = 'message loading';
+    mergeButton.disabled = true;
 
     try {
-        const response = await fetch('/.netlify/functions/merge', {
+        const payload = {
+            files: await Promise.all(
+                selectedFiles.map(async (file) => ({
+                    name: file.name,
+                    mimeType: file.type || 'application/octet-stream',
+                    dataBase64: await fileToBase64(file),
+                }))
+            ),
+        };
+
+        const response = await postWithTimeout('/api/merge', {
             method: 'POST',
-            body: formData,
-        });
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        }, 120000);
 
         if (!response.ok) {
             const errorResponse = await response.json().catch(() => ({}));
@@ -126,8 +165,14 @@ uploadForm.addEventListener('submit', async (event: SubmitEvent) => {
         selectedFiles = [];
         renderFileList();
     } catch (error) {
-        const text = error instanceof Error ? error.message : 'Error inesperado.';
+        const text = error instanceof Error && error.name === 'AbortError'
+            ? 'La operacion tardo demasiado. Prueba con menos archivos.'
+            : error instanceof Error
+                ? error.message
+                : 'Error inesperado.';
         message.textContent = text;
         message.className = 'message error';
+    } finally {
+        mergeButton.disabled = false;
     }
 });
